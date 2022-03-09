@@ -1,0 +1,29 @@
+- hosts: localhost
+  connection: local
+  tasks:
+  - name: Get namespace
+    k8s_info:
+      kind: Namespace
+      api_version: v1
+      name: "{{ namespace|mandatory }}"
+    register: discovered_namespace
+
+  - name: Parse UID value
+    set_fact:
+      uid: "{{ discovered_namespace.
+        get('resources', [{}])[0].
+        get('metadata', {}).
+        get('annotations', {}).
+        get('openshift.io/sa.scc.uid-range', '0/0').
+        split('/')[0] }}"
+
+  - name: Validate UID value
+    fail:
+      msg: "Failed to parse UID value"
+    when: uid|int == 0
+
+  - name: Launch Pod to change permissions of the volumes
+    k8s:
+      state: present
+      definition: "{{ lookup('template', './pod.yml.j2') }}"
+    when: pvcs|length > 0

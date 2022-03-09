@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: chown-executor
+  namespace: "{{ namespace|mandatory }}"
+spec:
+  containers:
+  - name: chowner
+    image: centos:latest
+    command: ["/bin/bash", "-c", "/usr/bin/chown -R {{ uid }} /tmp/"]
+    volumeMounts:
+{% for pvc in pvcs.split(',') %}
+    - name: "{{ pvc | checksum }}"
+      mountPath: "/tmp/{{ pvc | checksum }}"
+{% endfor %}
+  volumes:
+{% for pvc in pvcs.split(',') %}
+  - name: "{{ pvc | checksum }}"
+    persistentVolumeClaim:
+      claimName: "{{ pvc }}"
+{% endfor %}
