@@ -4,14 +4,15 @@ metadata:
   name: chown-executor
   namespace: "{{ namespace|mandatory }}"
 spec:
+  restartPolicy: Never
   containers:
   - name: chowner
     image: centos:latest
-    command: ["/bin/bash", "-c", "/usr/bin/chown -R {{ uid }} /tmp/"]
+    command: ["/bin/bash", "-c", "/usr/bin/chown -R {{ uid }}:{{ uid }} /mnt/"]
     volumeMounts:
 {% for pvc in pvcs.split(',') %}
     - name: "{{ pvc | checksum }}"
-      mountPath: "/tmp/{{ pvc | checksum }}"
+      mountPath: "/mnt/{{ pvc | checksum }}"
 {% endfor %}
   volumes:
 {% for pvc in pvcs.split(',') %}

@@ -6,6 +6,7 @@
       kind: Namespace
       api_version: v1
       name: "{{ namespace|mandatory }}"
+      context: "{{ context|mandatory }}"
     register: discovered_namespace
 
   - name: Parse UID value
@@ -27,3 +28,14 @@
       state: present
       definition: "{{ lookup('template', './pod.yml.j2') }}"
     when: pvcs|length > 0
+
+  - name: Wait for the Pod to complete
+    k8s_info:
+      api_version: v1
+      kind: Pod
+      name: chown-executor
+      namespace: "{{ namespace|mandatory }}"
+      context: "{{ context|mandatory }}"
+    register: pod_status
+    retries: "{{ retries | d(100) | int }}"
+    until: pod_status.get('resources', [{}])[0].get('status', {}).get('phase', '') in ["Failed", "Succeeded"]
